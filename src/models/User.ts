@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
   userId: string;
   password: string;
-  role: 'faculty_lab_staff' | 'security_staff' | 'hod' | 'security_incharge';
+  role: 'faculty_lab_staff' | 'security_staff' | 'hod' | 'security_incharge' | 'faculty';
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -30,7 +30,7 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: [true, 'Role is required'],
     enum: {
-      values: ['faculty_lab_staff', 'security_staff', 'hod', 'security_incharge'],
+      values: ['faculty_lab_staff', 'security_staff', 'hod', 'security_incharge', 'faculty'],
       message: 'Invalid role specified'
     }
   }

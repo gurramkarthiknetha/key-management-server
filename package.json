@@ -12,7 +12,8 @@
     "test:import": "node test-import.js",
     "import:data": "ts-node src/scripts/importData.ts",
     "import:data:no-clear": "ts-node src/scripts/importData.ts --no-clear",
-    "seed": "npm run import:data"
+    "seed": "npm run import:data",
+    "seed:new": "ts-node src/scripts/seedData.ts"
   },
   "keywords": [
     "key-management",

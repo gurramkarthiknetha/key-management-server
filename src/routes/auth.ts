@@ -23,7 +23,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Validate role
-    const validRoles = ['faculty_lab_staff', 'security_staff', 'hod', 'security_incharge'];
+    const validRoles = ['faculty_lab_staff', 'security_staff', 'hod', 'security_incharge', 'faculty'];
     if (!validRoles.includes(role)) {
       res.status(400).json({
         success: false,

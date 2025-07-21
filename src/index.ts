@@ -13,9 +13,10 @@ import { errorHandler, notFound } from './middleware/errorHandler';
 
 // Import routes
 import authRoutes from './routes/auth';
+import keyRoutes from './routes/keys';
+import historyRoutes from './routes/history';
 // import userRoutes from './routes/users';
 // TODO: Add other routes as they are migrated
-// import keyRoutes from './routes/keys';
 // import departmentRoutes from './routes/departments';
 // import logRoutes from './routes/logs';
 // import dashboardRoutes from './routes/dashboard';
@@ -55,9 +56,10 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/keys', keyRoutes);
+app.use('/api/history', historyRoutes);
 // app.use('/api/users', userRoutes);
 // TODO: Add other routes as they are migrated
-// app.use('/api/keys', keyRoutes);
 // app.use('/api/departments', departmentRoutes);
 // app.use('/api/logs', logRoutes);
 // app.use('/api/dashboard', dashboardRoutes);
