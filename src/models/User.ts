@@ -1,70 +1,38 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import { User as IUser, UserRole } from '../types';
+import mongoose, { Document, Schema } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
-export interface UserDocument extends Document {
-  name: string;
-  email: string;
+// User interface
+export interface IUser extends Document {
+  userId: string;
   password: string;
-  employeeId: string;
-  role: UserRole;
-  department: string;
-  isActive: boolean;
-  qrCode: string;
-  lastLogin?: Date;
-  profileImage?: string;
-  displayName: string;
+  role: 'faculty_lab_staff' | 'security_staff' | 'hod' | 'security_incharge';
+  createdAt: Date;
+  updatedAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const UserSchema = new Schema<UserDocument>({
-  name: {
+// User schema
+const userSchema = new Schema<IUser>({
+  userId: {
     type: String,
-    required: [true, 'Name is required'],
-    trim: true,
-    maxlength: [100, 'Name cannot exceed 100 characters']
-  },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
+    required: [true, 'User ID is required'],
     unique: true,
-    lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    minlength: [3, 'User ID must be at least 3 characters long'],
+    maxlength: [50, 'User ID cannot exceed 50 characters']
   },
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters']
-  },
-  employeeId: {
-    type: String,
-    required: [true, 'Employee ID is required'],
-    unique: true,
-    trim: true,
-    maxlength: [20, 'Employee ID cannot exceed 20 characters']
+    minlength: [6, 'Password must be at least 6 characters long']
   },
   role: {
     type: String,
-    enum: Object.values(UserRole),
-    required: [true, 'Role is required']
-  },
-  department: {
-    type: String,
-    required: [true, 'Department is required'],
-    trim: true
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  qrCode: {
-    type: String,
-    required: true
-  },
-  lastLogin: {
-    type: Date
-  },
-  profileImage: {
-    type: String
+    required: [true, 'Role is required'],
+    enum: {
+      values: ['faculty_lab_staff', 'security_staff', 'hod', 'security_incharge'],
+      message: 'Invalid role specified'
+    }
   }
 }, {
   timestamps: true,
@@ -76,15 +44,40 @@ const UserSchema = new Schema<UserDocument>({
   }
 });
 
-// Indexes for better performance
-UserSchema.index({ email: 1 });
-UserSchema.index({ employeeId: 1 });
-UserSchema.index({ department: 1 });
-UserSchema.index({ role: 1 });
+// Index for faster queries
+userSchema.index({ userId: 1 });
+userSchema.index({ role: 1 });
 
-// Virtual for full name display
-UserSchema.virtual('displayName').get(function() {
-  return `${this.name} (${this.employeeId})`;
+// Pre-save middleware to hash password
+userSchema.pre('save', async function(next) {
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) return next();
+
+  try {
+    // Hash password with cost of 12
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
 });
 
-export default mongoose.models.User || mongoose.model<UserDocument>('User', UserSchema);
+// Instance method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error('Password comparison failed');
+  }
+};
+
+// Static method to find user by userId
+userSchema.statics.findByUserId = function(userId: string) {
+  return this.findOne({ userId });
+};
+
+// Create and export the model
+const User = mongoose.model<IUser>('User', userSchema);
+
+export default User;

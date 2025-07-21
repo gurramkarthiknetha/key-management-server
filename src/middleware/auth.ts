@@ -1,87 +1,143 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken, hasPermission } from '../utils/auth';
-import { UserRole } from '../types';
+import jwt from 'jsonwebtoken';
+import User from '../models/User';
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    role: UserRole;
-    department: string;
-  };
+// JWT secret
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Interface for JWT payload
+interface JWTPayload {
+  userId: string;
+  id: string;
+  role: string;
+  iat: number;
+  exp: number;
 }
 
-export const authenticate = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+// Extend Request interface to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        userId: string;
+        role: string;
+      };
+    }
+  }
+}
+
+// Authentication middleware
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Get token from header
+    const authHeader = req.header('Authorization');
+    const token = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : null;
+
+    if (!token) {
       res.status(401).json({
         success: false,
-        error: 'No token provided'
+        error: 'Access denied. No token provided.'
       });
       return;
     }
 
-    const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
+    // Verify token
+    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
 
-    if (!decoded) {
+    // Check if user still exists
+    const user = await User.findById(decoded.id);
+    if (!user) {
       res.status(401).json({
         success: false,
-        error: 'Invalid or expired token'
+        error: 'Token is no longer valid. User not found.'
       });
       return;
     }
 
+    // Add user to request object
     req.user = {
+      id: decoded.id,
       userId: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
-      department: decoded.department
+      role: decoded.role
     };
 
     next();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Auth middleware error:', error);
-    res.status(401).json({
-      success: false,
-      error: 'Authentication failed'
-    });
-    return;
-  }
-};
 
-export const requireRoles = (roles: UserRole[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-    if (!req.user || !hasPermission(req.user.role, roles)) {
-      res.status(403).json({
+    if (error.name === 'JsonWebTokenError') {
+      res.status(401).json({
         success: false,
-        error: 'Insufficient permissions'
+        error: 'Invalid token'
       });
       return;
     }
+
+    if (error.name === 'TokenExpiredError') {
+      res.status(401).json({
+        success: false,
+        error: 'Token expired'
+      });
+      return;
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
+// Role-based authorization middleware
+export const authorize = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: 'Access denied. User not authenticated.'
+      });
+      return;
+    }
+
+    if (!roles.includes(req.user.role)) {
+      res.status(403).json({
+        success: false,
+        error: 'Access denied. Insufficient permissions.'
+      });
+      return;
+    }
+
     next();
   };
 };
 
-export const requireAdmin = requireRoles([UserRole.SECURITY_INCHARGE]);
+// Optional authentication middleware (doesn't fail if no token)
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const authHeader = req.header('Authorization');
+    const token = authHeader && authHeader.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : null;
 
-export const requireHODOrAdmin = requireRoles([UserRole.HOD, UserRole.SECURITY_INCHARGE]);
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+      const user = await User.findById(decoded.id);
+      
+      if (user) {
+        req.user = {
+          id: decoded.id,
+          userId: decoded.userId,
+          role: decoded.role
+        };
+      }
+    }
 
-export const requireStaffAccess = requireRoles([
-  UserRole.SECURITY_STAFF,
-  UserRole.FACULTY_LAB_STAFF,
-  UserRole.HOD,
-  UserRole.SECURITY_INCHARGE
-]);
-
-export const requireSecurityStaffOrAbove = requireRoles([
-  UserRole.SECURITY_STAFF,
-  UserRole.SECURITY_INCHARGE
-]);
-
-export const requireHODOrAbove = requireRoles([
-  UserRole.HOD,
-  UserRole.SECURITY_INCHARGE
-]);
+    next();
+  } catch (error) {
+    // Continue without authentication if token is invalid
+    next();
+  }
+};

@@ -1,13 +1,15 @@
+// Load environment variables first
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import path from 'path';
 
 import { connectDB } from './config/database';
-import { errorHandler } from './middleware/errorHandler';
-import { notFound } from './middleware/notFound';
+import { errorHandler, notFound } from './middleware/errorHandler';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -19,9 +21,6 @@ import authRoutes from './routes/auth';
 // import dashboardRoutes from './routes/dashboard';
 // import notificationRoutes from './routes/notifications';
 // import reportRoutes from './routes/reports';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
