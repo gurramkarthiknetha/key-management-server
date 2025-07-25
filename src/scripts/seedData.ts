@@ -136,6 +136,29 @@ const seedData = async () => {
         const areas = ['Main Gate', 'Parking Area', 'Library', 'Cafeteria', 'Auditorium', 'Admin Block', 'Hostel Block', 'Sports Complex'];
         const area = areas[i % areas.length];
 
+        // Assign some keys to specific security staff for testing
+        // sec12340 gets keys SEC-035 to SEC-040 (6 keys)
+        // sec12339 gets keys SEC-030 to SEC-034 (5 keys)
+        // sec12338 gets keys SEC-025 to SEC-029 (5 keys)
+        // Rest remain available
+        let status = 'available';
+        let assignedTo = undefined;
+        let assignedDate = undefined;
+
+        if (i >= 34) { // SEC-035 to SEC-040 (indices 34-39)
+          status = 'assigned';
+          assignedTo = 'sec12340';
+          assignedDate = new Date('2024-07-01');
+        } else if (i >= 29) { // SEC-030 to SEC-034 (indices 29-33)
+          status = 'assigned';
+          assignedTo = 'sec12339';
+          assignedDate = new Date('2024-07-01');
+        } else if (i >= 24) { // SEC-025 to SEC-029 (indices 24-28)
+          status = 'assigned';
+          assignedTo = 'sec12338';
+          assignedDate = new Date('2024-07-01');
+        }
+
         return {
           keyId: `SEC-${keyNum}`,
           keyName: `${area} Security Key ${i + 1}`,
@@ -143,7 +166,9 @@ const seedData = async () => {
           department: 'Security',
           location: `${area} - Zone ${Math.floor(i / 8) + 1}`,
           description: `Security access key for ${area} - Zone ${Math.floor(i / 8) + 1}`,
-          status: 'available',
+          status,
+          assignedTo,
+          assignedDate,
           assignmentType: 'temporary'
         };
       })
@@ -180,6 +205,46 @@ const seedData = async () => {
         securityPersonnelId: 'SECINC001',
         status: 'success'
       },
+      // Security staff key assignments
+      // sec12340 assignments (SEC-035 to SEC-040)
+      ...Array.from({ length: 6 }, (_, i) => {
+        const keyNum = String(35 + i).padStart(3, '0');
+        return {
+          keyId: `SEC-${keyNum}`,
+          userId: 'sec12340',
+          action: 'assigned',
+          timestamp: new Date(`2024-07-01T10:${String(i * 5).padStart(2, '0')}:00Z`),
+          notes: `Security key assigned to sec12340 for zone patrol duties`,
+          securityPersonnelId: 'SECINC001',
+          status: 'success'
+        };
+      }),
+      // sec12339 assignments (SEC-030 to SEC-034)
+      ...Array.from({ length: 5 }, (_, i) => {
+        const keyNum = String(30 + i).padStart(3, '0');
+        return {
+          keyId: `SEC-${keyNum}`,
+          userId: 'sec12339',
+          action: 'assigned',
+          timestamp: new Date(`2024-07-01T11:${String(i * 5).padStart(2, '0')}:00Z`),
+          notes: `Security key assigned to sec12339 for zone patrol duties`,
+          securityPersonnelId: 'SECINC001',
+          status: 'success'
+        };
+      }),
+      // sec12338 assignments (SEC-025 to SEC-029)
+      ...Array.from({ length: 5 }, (_, i) => {
+        const keyNum = String(25 + i).padStart(3, '0');
+        return {
+          keyId: `SEC-${keyNum}`,
+          userId: 'sec12338',
+          action: 'assigned',
+          timestamp: new Date(`2024-07-01T12:${String(i * 5).padStart(2, '0')}:00Z`),
+          notes: `Security key assigned to sec12338 for zone patrol duties`,
+          securityPersonnelId: 'SECINC001',
+          status: 'success'
+        };
+      }),
       // Sample scan history for faculty users
       {
         keyId: 'LAB-FAC-001',
@@ -259,7 +324,11 @@ const seedData = async () => {
     console.log('   sec12301 to sec12340 / 123456789');
     console.log('\n🔑 Keys Summary:');
     console.log('   - 10 Faculty keys (LAB-FAC-001 to LAB-FAC-010) assigned to faculty');
-    console.log('   - 40 Security keys (SEC-001 to SEC-040) available for security staff');
+    console.log('   - 40 Security keys (SEC-001 to SEC-040):');
+    console.log('     • SEC-035 to SEC-040 assigned to sec12340 (6 keys)');
+    console.log('     • SEC-030 to SEC-034 assigned to sec12339 (5 keys)');
+    console.log('     • SEC-025 to SEC-029 assigned to sec12338 (5 keys)');
+    console.log('     • SEC-001 to SEC-024 available for assignment (24 keys)');
     console.log('   - Additional lab and storage keys for variety');
 
   } catch (error) {

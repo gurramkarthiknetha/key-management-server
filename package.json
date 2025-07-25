@@ -26,6 +26,7 @@
   "dependencies": {
     "@types/morgan": "^1.9.10",
     "@types/qrcode": "^1.5.5",
+    "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",

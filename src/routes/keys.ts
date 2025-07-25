@@ -27,7 +27,6 @@ router.get('/', authMiddleware, async (req: Request, res: Response): Promise<voi
     if (assignedTo) filter.assignedTo = assignedTo;
 
     const keys = await Key.find(filter)
-      .populate('assignedTo', 'userId role')
       .sort({ keyId: 1 });
 
     res.json({
